@@ -1,0 +1,215 @@
+import sys
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+import win32api, win32con
+import subprocess
+from PyQt5.QtGui import *
+
+
+class MyApp(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+   
+        self.table_widget = MyTableWidget(self)
+        self.setCentralWidget(self.table_widget)
+        
+        
+        # make and add menu
+        mainMenu = self.menuBar()
+        fileMenu = mainMenu.addMenu('File')
+        editMenu = mainMenu.addMenu('Edit')
+        viewMenu = mainMenu.addMenu('View')
+        searchMenu = mainMenu.addMenu('Search')
+        toolsMenu = mainMenu.addMenu('Tools')
+        helpMenu = mainMenu.addMenu('Help')
+         
+        # make button
+        exitButton = QAction(QIcon('exit24.png'), 'Exit', self)
+        exitButton.setShortcut('Ctrl+Q')
+        exitButton.setStatusTip('Exit application')
+        exitButton.triggered.connect(self.close)
+        
+        # add button
+        fileMenu.addAction(exitButton)
+        editMenu.addAction(exitButton)
+        
+        
+
+        self.setWindowTitle('Repeated Click')
+        self.setGeometry(300, 300, 300, 200)
+        self.show()
+        
+
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Escape:
+            self.close()
+        elif e.key() == Qt.Key_Z:
+            self.showFullScreen()
+        elif e.key() == Qt.Key_N:
+            self.showNormal()
+            
+            
+ 
+        
+        
+        
+        
+        
+
+class MyTableWidget(QWidget):
+     
+    def __init__(self, parent):
+        super(QWidget, self).__init__(parent)
+        self.layout = QVBoxLayout(self)
+         
+        # Initialize tab screen
+        self.tabs = QTabWidget()
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+        self.tabs.resize(600,500)
+         
+        
+        # hbox0 : make button -> add to hbox
+        self.tab1.hbox0 = QHBoxLayout()
+        self.pushButton1 = QPushButton("계산기")
+        self.pushButton1.setStyleSheet('background:green')
+        self.pushButton1.clicked.connect(self.on_click)
+        self.tab1.hbox0.addStretch(5)
+        self.tab1.hbox0.addWidget(self.pushButton1)
+        self.tab1.hbox0.addStretch(5)
+        
+        
+        
+        
+        # make line edit / button / label / timer ->  add to hbox
+        x = 0
+        y = 0
+        self.x_le = QLineEdit()
+        self.y_le = QLineEdit()
+        self.t_le = QLineEdit()
+        self.start_btn = QPushButton('Start', self)
+        self.start_btn.clicked.connect(self.start_btn_click)
+        self.text = 'x: {0}, y: {1}'.format(x, y)
+        self.label = QLabel(self.text, self)
+        self.timer = QTimer()
+        self.setMouseTracking(True)
+
+        self.tab1.hbox1 = QHBoxLayout()
+        self.tab1.hbox1.addWidget(QLabel('x 위치: '))
+        self.tab1.hbox1.addWidget(self.x_le)
+        self.tab1.hbox1.addWidget(QLabel('y 위치: '))
+        self.tab1.hbox1.addWidget(self.y_le)
+
+        self.tab1.hbox2 = QHBoxLayout()
+        self.tab1.hbox2.addStretch(1)
+        self.tab1.hbox2.addWidget(QLabel('Delay: '))
+        self.tab1.hbox2.addWidget(self.t_le)
+        self.tab1.hbox2.addStretch(1)
+
+        self.tab1.hbox3 = QHBoxLayout()
+        self.tab1.hbox3.addStretch(1)
+        self.tab1.hbox3.addWidget(self.start_btn)
+        self.tab1.hbox3.addStretch(1)
+        
+        self.tab1.hbox4 = QHBoxLayout()
+        self.tab1.hbox4.addWidget(self.label)
+        
+        
+        # add hboxs to vbox
+        self.tab1.vbox = QVBoxLayout()
+        self.tab1.vbox.addLayout(self.tab1.hbox0)
+        self.tab1.vbox.addLayout(self.tab1.hbox1)
+        self.tab1.vbox.addLayout(self.tab1.hbox2)
+        self.tab1.vbox.addLayout(self.tab1.hbox3)
+        self.tab1.vbox.addLayout(self.tab1.hbox4)
+
+
+        # set tab1 layout to vbox
+        self.tab1.setLayout(self.tab1.vbox)
+        
+        
+        
+        
+        
+        
+        
+        self.tab2.hbox0 = QHBoxLayout()
+        self.tab2.hbox0.addWidget(QCheckBox('1', self))
+        self.tab2.hbox0.addWidget(QCheckBox('2', self))
+        self.tab2.hbox0.addWidget(QCheckBox('3', self))
+        
+        
+        self.tab2.vbox = QVBoxLayout()
+        self.tab2.vbox.addLayout(self.tab2.hbox0)
+        self.tab2.setLayout(self.tab2.vbox)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        # Add tab1 and tab2 to tabs
+        self.tabs.addTab(self.tab1,"Tab 1")
+        self.tabs.addTab(self.tab2,"Tab 2")
+        
+
+        # Add tabs to widget
+        self.layout.addWidget(self.tabs)
+        self.setLayout(self.layout)
+     
+        
+        
+        
+ 
+    @pyqtSlot()
+    def on_click(self):
+        buttonReply = QMessageBox.question(self, 'PyQt5 message', "Do you want to run calculator?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if buttonReply == QMessageBox.Yes:
+            print('Yes clicked.')
+            subprocess.Popen("c:\windows\system32\\calc.exe")
+        else:
+            print('No clicked.')
+        
+        
+        
+    @pyqtSlot()    
+    def start_btn_click(self):
+
+        delay = int(self.t_le.text())
+        self.timer.start(delay*1000)
+        self.timer.timeout.connect(self.mouse_click)
+
+
+    def mouseMoveEvent(self, e):
+        p = QCursor.pos()
+        text = 'x: {0}, y: {1}'.format(p.x(), p.y())
+        self.label.setText(text)
+        self.label.adjustSize()    
+           
+        
+    def mouse_click(self):
+
+        x = int(self.x_le.text())
+        y = int(self.y_le.text())
+
+        win32api.SetCursorPos((x, y))
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0)
+        win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, x, y, 0, 0)
+    
+
+
+
+
+
+
+
+if __name__ == '__main__':
+
+    app = QApplication(sys.argv)
+    ex = MyApp()
+    sys.exit(app.exec_())
